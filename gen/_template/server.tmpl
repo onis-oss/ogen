@@ -13,12 +13,44 @@ type Handler interface {
 	// {{ $op.Spec.HTTPMethod }} {{ $op.Spec.Path }}
 	{{ $op.Name }}(ctx context.Context {{ if $op.Request }}, req {{ $op.Request.Type.Go }}{{ end }}{{ if $op.Params }}, params {{ $op.Name }}Params {{ end }}) ({{ $op.Response.Type.Go }}, error)
 {{- end }}
+{{- range $op := $.Operations }}
+	// {{ $op.Name }} implements {{ $op.Spec.OperationID }} operation.
+	//
+	{{- template "godoc_def" $op.GoDoc }}
+	// {{ $op.Spec.HTTPMethod }} {{ $op.Spec.Path }}
+	PolicyFor{{ $op.Name }}Req(ctx context.Context {{ if $op.Request }}, req {{ $op.Request.Type.Go }}{{ end }}{{ if $op.Params }}, params {{ $op.Name }}Params {{ end }}, po Policy) Policy
+{{- end }}
+{{- range $op := $.Operations }}
+	// {{ $op.Name }} implements {{ $op.Spec.OperationID }} operation.
+	//
+	{{- template "godoc_def" $op.GoDoc }}
+	// {{ $op.Spec.HTTPMethod }} {{ $op.Spec.Path }}
+	PolicyFor{{ $op.Name }}Res(ctx context.Context, po Policy {{ if $op.Request }}, req {{ $op.Request.Type.Go }}{{ end }}{{ if $op.Params }}, params {{ $op.Name }}Params {{ end }}, res {{ $op.Response.Type.Go }}) Policy
+{{- end }}
 {{- if $.Error }}
 	// NewError creates {{ $.ErrorType.Go }} from error returned by handler.
 	//
 	// Used for common default response.
 	NewError(ctx context.Context, err error) {{ $.ErrorType.Go }}
 {{- end }}
+
+	//check policy request
+	PolicyForRequest(ctx context.Context, r *http.Request) Policy
+}
+
+type Policy interface {
+	IsAllowed(privilege int) bool
+}
+
+type policyCtxKey struct{}
+
+func NewPolicyContext(parent context.Context, p Policy) context.Context {
+	return context.WithValue(parent, policyCtxKey{}, p)
+}
+
+func GetPolicyFromContext(ctx context.Context) Policy {
+	c, _ := ctx.Value(policyCtxKey{}).(Policy)
+	return c
 }
 
 // Server implements http server based on OpenAPI v3 specification and

@@ -21,7 +21,12 @@ func (s *Server) handle{{ $op.Name }}Request(args [{{ $op.PathParamsCount }}]str
 	)
 	s.requests.Add(ctx, 1, otelAttrs...)
 	defer span.End()
-
+	p := s.h.PolicyForRequest(ctx, r) //check policy
+	if !p.IsAllowed(PrivId{{ $op.Name }}) {
+		s.badRequest(ctx, w, span, otelAttrs, errors.New("ogen: {{ $op.Name }} is not allowed"))
+		return
+	}
+	ctx = NewPolicyContext(ctx, p)
 	var err error
 	{{- range $s := $op.Security }}
 	ctx, err = s.security{{ $s.Security.Type.Name }}(ctx, {{ quote $op.Name }}, r)
@@ -47,7 +52,12 @@ func (s *Server) handle{{ $op.Name }}Request(args [{{ $op.PathParamsCount }}]str
 		return
 	}
 	{{- end }}
-
+	// Operation has data driven policy
+	p = s.h.PolicyFor{{$op.Name}}Req(ctx{{ if $op.Request }}, request{{ end }}{{if $op.Params}}, params {{ end }}, p)
+	if !p.IsAllowed(PrivId{{ $op.Name }}) {
+		s.badRequest(ctx, w, span, otelAttrs, errors.New("ogen: {{ $op.Name }} is not allowed"))
+		return
+	}
 	response, err := s.h.{{$op.Name}}(ctx{{ if $op.Request }}, request{{ end }}{{if $op.Params}}, params {{ end }})
 	if err != nil {
 		{{- /* It is not secure to expose internal error to client, but better than nothing. */ -}}
@@ -70,7 +80,12 @@ func (s *Server) handle{{ $op.Name }}Request(args [{{ $op.PathParamsCount }}]str
         {{- end }}
 		return
 	}
-
+	// Operation has data driven policy
+	p = s.h.PolicyFor{{$op.Name}}Res(ctx, p{{ if $op.Request }}, request{{ end }}{{if $op.Params}}, params {{ end }}, response)
+	if !p.IsAllowed(PrivId{{ $op.Name }}) {
+		s.badRequest(ctx, w, span, otelAttrs, errors.New("ogen: Response {{ $op.Name }} is not allowed"))
+		return
+	}
 	if err := encode{{ $op.Name }}Response(response, w, span); err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "Response")
