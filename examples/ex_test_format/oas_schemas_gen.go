@@ -3,80 +3,12 @@
 package api
 
 import (
-	"bytes"
-	"context"
-	"fmt"
-	"io"
-	"math"
-	"math/big"
-	"math/bits"
-	"net"
-	"net/http"
 	"net/netip"
 	"net/url"
-	"regexp"
-	"sort"
-	"strconv"
-	"strings"
-	"sync"
 	"time"
 
-	"github.com/go-faster/errors"
 	"github.com/go-faster/jx"
 	"github.com/google/uuid"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/codes"
-	"go.opentelemetry.io/otel/metric"
-	"go.opentelemetry.io/otel/metric/instrument/syncint64"
-	"go.opentelemetry.io/otel/metric/nonrecording"
-	"go.opentelemetry.io/otel/trace"
-
-	"github.com/ogen-go/ogen/conv"
-	ht "github.com/ogen-go/ogen/http"
-	"github.com/ogen-go/ogen/json"
-	"github.com/ogen-go/ogen/otelogen"
-	"github.com/ogen-go/ogen/uri"
-	"github.com/ogen-go/ogen/validate"
-)
-
-// No-op definition for keeping imports.
-var (
-	_ = bytes.NewReader
-	_ = context.Background()
-	_ = fmt.Stringer(nil)
-	_ = io.Copy
-	_ = math.Mod
-	_ = big.Rat{}
-	_ = bits.LeadingZeros64
-	_ = net.IP{}
-	_ = http.MethodGet
-	_ = netip.Addr{}
-	_ = url.URL{}
-	_ = regexp.MustCompile
-	_ = sort.Ints
-	_ = strconv.ParseInt
-	_ = strings.Builder{}
-	_ = sync.Pool{}
-	_ = time.Time{}
-
-	_ = errors.Is
-	_ = jx.Null
-	_ = uuid.UUID{}
-	_ = otel.GetTracerProvider
-	_ = attribute.KeyValue{}
-	_ = codes.Unset
-	_ = metric.MeterConfig{}
-	_ = syncint64.Counter(nil)
-	_ = nonrecording.NewNoopMeterProvider
-	_ = trace.TraceIDFromHex
-
-	_ = conv.ToInt32
-	_ = ht.NewRequest
-	_ = json.Marshal
-	_ = otelogen.Version
-	_ = uri.PathEncoder{}
-	_ = validate.Int{}
 )
 
 // Error Response Schema.
@@ -2226,6 +2158,52 @@ func (o OptString) Or(d string) string {
 	return d
 }
 
+// NewOptStruct returns new OptStruct with value set to v.
+func NewOptStruct(v struct{}) OptStruct {
+	return OptStruct{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptStruct is optional struct{}.
+type OptStruct struct {
+	Value struct{}
+	Set   bool
+}
+
+// IsSet returns true if OptStruct was set.
+func (o OptStruct) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptStruct) Reset() {
+	var v struct{}
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptStruct) SetTo(v struct{}) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptStruct) Get() (v struct{}, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptStruct) Or(d struct{}) struct{} {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptTestRequestFormatTestReq returns new OptTestRequestFormatTestReq with value set to v.
 func NewOptTestRequestFormatTestReq(v TestRequestFormatTestReq) OptTestRequestFormatTestReq {
 	return OptTestRequestFormatTestReq{
@@ -2419,6 +2397,7 @@ type TestRequestFormatTestReq struct {
 	RequiredArrayInteger                   []int             "json:\"required_array_integer\""
 	RequiredArrayIntegerInt32              []int32           "json:\"required_array_integer_int32\""
 	RequiredArrayIntegerInt64              []int64           "json:\"required_array_integer_int64\""
+	RequiredArrayNull                      []struct{}        "json:\"required_array_null\""
 	RequiredArrayNumber                    []float64         "json:\"required_array_number\""
 	RequiredArrayNumberDouble              []float64         "json:\"required_array_number_double\""
 	RequiredArrayNumberFloat               []float32         "json:\"required_array_number_float\""
@@ -2445,6 +2424,7 @@ type TestRequestFormatTestReq struct {
 	RequiredDoubleArrayInteger             [][]int           "json:\"required_double_array_integer\""
 	RequiredDoubleArrayIntegerInt32        [][]int32         "json:\"required_double_array_integer_int32\""
 	RequiredDoubleArrayIntegerInt64        [][]int64         "json:\"required_double_array_integer_int64\""
+	RequiredDoubleArrayNull                [][]struct{}      "json:\"required_double_array_null\""
 	RequiredDoubleArrayNumber              [][]float64       "json:\"required_double_array_number\""
 	RequiredDoubleArrayNumberDouble        [][]float64       "json:\"required_double_array_number_double\""
 	RequiredDoubleArrayNumberFloat         [][]float32       "json:\"required_double_array_number_float\""
@@ -2468,6 +2448,7 @@ type TestRequestFormatTestReq struct {
 	RequiredInteger                        int               "json:\"required_integer\""
 	RequiredIntegerInt32                   int32             "json:\"required_integer_int32\""
 	RequiredIntegerInt64                   int64             "json:\"required_integer_int64\""
+	RequiredNull                           struct{}          "json:\"required_null\""
 	RequiredNumber                         float64           "json:\"required_number\""
 	RequiredNumberDouble                   float64           "json:\"required_number_double\""
 	RequiredNumberFloat                    float32           "json:\"required_number_float\""
@@ -2494,6 +2475,7 @@ type TestRequestFormatTestReq struct {
 	OptionalArrayInteger                   []int             "json:\"optional_array_integer\""
 	OptionalArrayIntegerInt32              []int32           "json:\"optional_array_integer_int32\""
 	OptionalArrayIntegerInt64              []int64           "json:\"optional_array_integer_int64\""
+	OptionalArrayNull                      []struct{}        "json:\"optional_array_null\""
 	OptionalArrayNumber                    []float64         "json:\"optional_array_number\""
 	OptionalArrayNumberDouble              []float64         "json:\"optional_array_number_double\""
 	OptionalArrayNumberFloat               []float32         "json:\"optional_array_number_float\""
@@ -2520,6 +2502,7 @@ type TestRequestFormatTestReq struct {
 	OptionalDoubleArrayInteger             [][]int           "json:\"optional_double_array_integer\""
 	OptionalDoubleArrayIntegerInt32        [][]int32         "json:\"optional_double_array_integer_int32\""
 	OptionalDoubleArrayIntegerInt64        [][]int64         "json:\"optional_double_array_integer_int64\""
+	OptionalDoubleArrayNull                [][]struct{}      "json:\"optional_double_array_null\""
 	OptionalDoubleArrayNumber              [][]float64       "json:\"optional_double_array_number\""
 	OptionalDoubleArrayNumberDouble        [][]float64       "json:\"optional_double_array_number_double\""
 	OptionalDoubleArrayNumberFloat         [][]float32       "json:\"optional_double_array_number_float\""
@@ -2543,6 +2526,7 @@ type TestRequestFormatTestReq struct {
 	OptionalInteger                        OptInt            "json:\"optional_integer\""
 	OptionalIntegerInt32                   OptInt32          "json:\"optional_integer_int32\""
 	OptionalIntegerInt64                   OptInt64          "json:\"optional_integer_int64\""
+	OptionalNull                           OptStruct         "json:\"optional_null\""
 	OptionalNumber                         OptFloat64        "json:\"optional_number\""
 	OptionalNumberDouble                   OptFloat64        "json:\"optional_number_double\""
 	OptionalNumberFloat                    OptFloat32        "json:\"optional_number_float\""
@@ -2574,6 +2558,7 @@ type TestRequestRequiredFormatTestReq struct {
 	RequiredArrayInteger                   []int             "json:\"required_array_integer\""
 	RequiredArrayIntegerInt32              []int32           "json:\"required_array_integer_int32\""
 	RequiredArrayIntegerInt64              []int64           "json:\"required_array_integer_int64\""
+	RequiredArrayNull                      []struct{}        "json:\"required_array_null\""
 	RequiredArrayNumber                    []float64         "json:\"required_array_number\""
 	RequiredArrayNumberDouble              []float64         "json:\"required_array_number_double\""
 	RequiredArrayNumberFloat               []float32         "json:\"required_array_number_float\""
@@ -2600,6 +2585,7 @@ type TestRequestRequiredFormatTestReq struct {
 	RequiredDoubleArrayInteger             [][]int           "json:\"required_double_array_integer\""
 	RequiredDoubleArrayIntegerInt32        [][]int32         "json:\"required_double_array_integer_int32\""
 	RequiredDoubleArrayIntegerInt64        [][]int64         "json:\"required_double_array_integer_int64\""
+	RequiredDoubleArrayNull                [][]struct{}      "json:\"required_double_array_null\""
 	RequiredDoubleArrayNumber              [][]float64       "json:\"required_double_array_number\""
 	RequiredDoubleArrayNumberDouble        [][]float64       "json:\"required_double_array_number_double\""
 	RequiredDoubleArrayNumberFloat         [][]float32       "json:\"required_double_array_number_float\""
@@ -2623,6 +2609,7 @@ type TestRequestRequiredFormatTestReq struct {
 	RequiredInteger                        int               "json:\"required_integer\""
 	RequiredIntegerInt32                   int32             "json:\"required_integer_int32\""
 	RequiredIntegerInt64                   int64             "json:\"required_integer_int64\""
+	RequiredNull                           struct{}          "json:\"required_null\""
 	RequiredNumber                         float64           "json:\"required_number\""
 	RequiredNumberDouble                   float64           "json:\"required_number_double\""
 	RequiredNumberFloat                    float32           "json:\"required_number_float\""
@@ -2649,6 +2636,7 @@ type TestRequestRequiredFormatTestReq struct {
 	OptionalArrayInteger                   []int             "json:\"optional_array_integer\""
 	OptionalArrayIntegerInt32              []int32           "json:\"optional_array_integer_int32\""
 	OptionalArrayIntegerInt64              []int64           "json:\"optional_array_integer_int64\""
+	OptionalArrayNull                      []struct{}        "json:\"optional_array_null\""
 	OptionalArrayNumber                    []float64         "json:\"optional_array_number\""
 	OptionalArrayNumberDouble              []float64         "json:\"optional_array_number_double\""
 	OptionalArrayNumberFloat               []float32         "json:\"optional_array_number_float\""
@@ -2675,6 +2663,7 @@ type TestRequestRequiredFormatTestReq struct {
 	OptionalDoubleArrayInteger             [][]int           "json:\"optional_double_array_integer\""
 	OptionalDoubleArrayIntegerInt32        [][]int32         "json:\"optional_double_array_integer_int32\""
 	OptionalDoubleArrayIntegerInt64        [][]int64         "json:\"optional_double_array_integer_int64\""
+	OptionalDoubleArrayNull                [][]struct{}      "json:\"optional_double_array_null\""
 	OptionalDoubleArrayNumber              [][]float64       "json:\"optional_double_array_number\""
 	OptionalDoubleArrayNumberDouble        [][]float64       "json:\"optional_double_array_number_double\""
 	OptionalDoubleArrayNumberFloat         [][]float32       "json:\"optional_double_array_number_float\""
@@ -2698,6 +2687,7 @@ type TestRequestRequiredFormatTestReq struct {
 	OptionalInteger                        OptInt            "json:\"optional_integer\""
 	OptionalIntegerInt32                   OptInt32          "json:\"optional_integer_int32\""
 	OptionalIntegerInt64                   OptInt64          "json:\"optional_integer_int64\""
+	OptionalNull                           OptStruct         "json:\"optional_null\""
 	OptionalNumber                         OptFloat64        "json:\"optional_number\""
 	OptionalNumberDouble                   OptFloat64        "json:\"optional_number_double\""
 	OptionalNumberFloat                    OptFloat32        "json:\"optional_number_float\""
@@ -2729,6 +2719,7 @@ type TestResponseFormatTestOK struct {
 	RequiredArrayInteger                   []int             "json:\"required_array_integer\""
 	RequiredArrayIntegerInt32              []int32           "json:\"required_array_integer_int32\""
 	RequiredArrayIntegerInt64              []int64           "json:\"required_array_integer_int64\""
+	RequiredArrayNull                      []struct{}        "json:\"required_array_null\""
 	RequiredArrayNumber                    []float64         "json:\"required_array_number\""
 	RequiredArrayNumberDouble              []float64         "json:\"required_array_number_double\""
 	RequiredArrayNumberFloat               []float32         "json:\"required_array_number_float\""
@@ -2755,6 +2746,7 @@ type TestResponseFormatTestOK struct {
 	RequiredDoubleArrayInteger             [][]int           "json:\"required_double_array_integer\""
 	RequiredDoubleArrayIntegerInt32        [][]int32         "json:\"required_double_array_integer_int32\""
 	RequiredDoubleArrayIntegerInt64        [][]int64         "json:\"required_double_array_integer_int64\""
+	RequiredDoubleArrayNull                [][]struct{}      "json:\"required_double_array_null\""
 	RequiredDoubleArrayNumber              [][]float64       "json:\"required_double_array_number\""
 	RequiredDoubleArrayNumberDouble        [][]float64       "json:\"required_double_array_number_double\""
 	RequiredDoubleArrayNumberFloat         [][]float32       "json:\"required_double_array_number_float\""
@@ -2778,6 +2770,7 @@ type TestResponseFormatTestOK struct {
 	RequiredInteger                        int               "json:\"required_integer\""
 	RequiredIntegerInt32                   int32             "json:\"required_integer_int32\""
 	RequiredIntegerInt64                   int64             "json:\"required_integer_int64\""
+	RequiredNull                           struct{}          "json:\"required_null\""
 	RequiredNumber                         float64           "json:\"required_number\""
 	RequiredNumberDouble                   float64           "json:\"required_number_double\""
 	RequiredNumberFloat                    float32           "json:\"required_number_float\""
@@ -2804,6 +2797,7 @@ type TestResponseFormatTestOK struct {
 	OptionalArrayInteger                   []int             "json:\"optional_array_integer\""
 	OptionalArrayIntegerInt32              []int32           "json:\"optional_array_integer_int32\""
 	OptionalArrayIntegerInt64              []int64           "json:\"optional_array_integer_int64\""
+	OptionalArrayNull                      []struct{}        "json:\"optional_array_null\""
 	OptionalArrayNumber                    []float64         "json:\"optional_array_number\""
 	OptionalArrayNumberDouble              []float64         "json:\"optional_array_number_double\""
 	OptionalArrayNumberFloat               []float32         "json:\"optional_array_number_float\""
@@ -2830,6 +2824,7 @@ type TestResponseFormatTestOK struct {
 	OptionalDoubleArrayInteger             [][]int           "json:\"optional_double_array_integer\""
 	OptionalDoubleArrayIntegerInt32        [][]int32         "json:\"optional_double_array_integer_int32\""
 	OptionalDoubleArrayIntegerInt64        [][]int64         "json:\"optional_double_array_integer_int64\""
+	OptionalDoubleArrayNull                [][]struct{}      "json:\"optional_double_array_null\""
 	OptionalDoubleArrayNumber              [][]float64       "json:\"optional_double_array_number\""
 	OptionalDoubleArrayNumberDouble        [][]float64       "json:\"optional_double_array_number_double\""
 	OptionalDoubleArrayNumberFloat         [][]float32       "json:\"optional_double_array_number_float\""
@@ -2853,6 +2848,7 @@ type TestResponseFormatTestOK struct {
 	OptionalInteger                        OptInt            "json:\"optional_integer\""
 	OptionalIntegerInt32                   OptInt32          "json:\"optional_integer_int32\""
 	OptionalIntegerInt64                   OptInt64          "json:\"optional_integer_int64\""
+	OptionalNull                           OptStruct         "json:\"optional_null\""
 	OptionalNumber                         OptFloat64        "json:\"optional_number\""
 	OptionalNumberDouble                   OptFloat64        "json:\"optional_number_double\""
 	OptionalNumberFloat                    OptFloat32        "json:\"optional_number_float\""

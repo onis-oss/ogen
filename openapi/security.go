@@ -1,4 +1,4 @@
-package oas
+package openapi
 
 type SecurityRequirements struct {
 	Scopes   []string

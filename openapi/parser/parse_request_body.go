@@ -4,11 +4,11 @@ import (
 	"github.com/go-faster/errors"
 
 	"github.com/ogen-go/ogen"
-	"github.com/ogen-go/ogen/internal/oas"
 	"github.com/ogen-go/ogen/jsonschema"
+	"github.com/ogen-go/ogen/openapi"
 )
 
-func (p *parser) parseRequestBody(body *ogen.RequestBody, ctx resolveCtx) (*oas.RequestBody, error) {
+func (p *parser) parseRequestBody(body *ogen.RequestBody, ctx resolveCtx) (*openapi.RequestBody, error) {
 	if ref := body.Ref; ref != "" {
 		reqBody, err := p.resolveRequestBody(ref, ctx)
 		if err != nil {
@@ -22,7 +22,7 @@ func (p *parser) parseRequestBody(body *ogen.RequestBody, ctx resolveCtx) (*oas.
 		return nil, errors.New("content must have at least one entry")
 	}
 
-	result := &oas.RequestBody{
+	result := &openapi.RequestBody{
 		Contents: make(map[string]*jsonschema.Schema, len(body.Content)),
 		Required: body.Required,
 	}

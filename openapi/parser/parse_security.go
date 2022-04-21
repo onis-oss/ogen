@@ -4,7 +4,7 @@ import (
 	"github.com/go-faster/errors"
 
 	"github.com/ogen-go/ogen"
-	"github.com/ogen-go/ogen/internal/oas"
+	"github.com/ogen-go/ogen/openapi"
 )
 
 func (p *parser) parseSecuritySchema(s *ogen.SecuritySchema, ctx resolveCtx) (*ogen.SecuritySchema, error) {
@@ -21,12 +21,12 @@ func (p *parser) parseSecuritySchema(s *ogen.SecuritySchema, ctx resolveCtx) (*o
 	return s, nil
 }
 
-func cloneOAuthFlows(flows ogen.OAuthFlows) (r oas.OAuthFlows) {
-	cloneFlow := func(flow *ogen.OAuthFlow) *oas.OAuthFlow {
+func cloneOAuthFlows(flows ogen.OAuthFlows) (r openapi.OAuthFlows) {
+	cloneFlow := func(flow *ogen.OAuthFlow) *openapi.OAuthFlow {
 		if flow == nil {
 			return nil
 		}
-		r := &oas.OAuthFlow{
+		r := &openapi.OAuthFlow{
 			AuthorizationURL: flow.AuthorizationURL,
 			TokenURL:         flow.TokenURL,
 			RefreshURL:       flow.RefreshURL,
@@ -38,7 +38,7 @@ func cloneOAuthFlows(flows ogen.OAuthFlows) (r oas.OAuthFlows) {
 		return r
 	}
 
-	return oas.OAuthFlows{
+	return openapi.OAuthFlows{
 		Implicit:          cloneFlow(flows.Implicit),
 		Password:          cloneFlow(flows.Password),
 		ClientCredentials: cloneFlow(flows.ClientCredentials),
@@ -46,8 +46,8 @@ func cloneOAuthFlows(flows ogen.OAuthFlows) (r oas.OAuthFlows) {
 	}
 }
 
-func (p *parser) parseSecurityRequirements(requirements ogen.SecurityRequirements) ([]oas.SecurityRequirements, error) {
-	result := make([]oas.SecurityRequirements, 0, len(requirements))
+func (p *parser) parseSecurityRequirements(requirements ogen.SecurityRequirements) ([]openapi.SecurityRequirements, error) {
+	result := make([]openapi.SecurityRequirements, 0, len(requirements))
 	for _, req := range requirements {
 		for requirementName, scopes := range req {
 			v, ok := p.refs.securitySchemes[requirementName]
@@ -60,10 +60,10 @@ func (p *parser) parseSecurityRequirements(requirements ogen.SecurityRequirement
 				return nil, errors.Wrapf(err, "resolve %q", requirementName)
 			}
 
-			result = append(result, oas.SecurityRequirements{
+			result = append(result, openapi.SecurityRequirements{
 				Scopes: scopes,
 				Name:   requirementName,
-				Security: oas.Security{
+				Security: openapi.Security{
 					Type:             spec.Type,
 					Description:      spec.Description,
 					Name:             spec.Name,

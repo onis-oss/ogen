@@ -3,80 +3,7 @@
 package api
 
 import (
-	"bytes"
-	"context"
-	"fmt"
-	"io"
-	"math"
-	"math/big"
-	"math/bits"
-	"net"
 	"net/http"
-	"net/netip"
-	"net/url"
-	"regexp"
-	"sort"
-	"strconv"
-	"strings"
-	"sync"
-	"time"
-
-	"github.com/go-faster/errors"
-	"github.com/go-faster/jx"
-	"github.com/google/uuid"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/codes"
-	"go.opentelemetry.io/otel/metric"
-	"go.opentelemetry.io/otel/metric/instrument/syncint64"
-	"go.opentelemetry.io/otel/metric/nonrecording"
-	"go.opentelemetry.io/otel/trace"
-
-	"github.com/ogen-go/ogen/conv"
-	ht "github.com/ogen-go/ogen/http"
-	"github.com/ogen-go/ogen/json"
-	"github.com/ogen-go/ogen/otelogen"
-	"github.com/ogen-go/ogen/uri"
-	"github.com/ogen-go/ogen/validate"
-)
-
-// No-op definition for keeping imports.
-var (
-	_ = bytes.NewReader
-	_ = context.Background()
-	_ = fmt.Stringer(nil)
-	_ = io.Copy
-	_ = math.Mod
-	_ = big.Rat{}
-	_ = bits.LeadingZeros64
-	_ = net.IP{}
-	_ = http.MethodGet
-	_ = netip.Addr{}
-	_ = url.URL{}
-	_ = regexp.MustCompile
-	_ = sort.Ints
-	_ = strconv.ParseInt
-	_ = strings.Builder{}
-	_ = sync.Pool{}
-	_ = time.Time{}
-
-	_ = errors.Is
-	_ = jx.Null
-	_ = uuid.UUID{}
-	_ = otel.GetTracerProvider
-	_ = attribute.KeyValue{}
-	_ = codes.Unset
-	_ = metric.MeterConfig{}
-	_ = syncint64.Counter(nil)
-	_ = nonrecording.NewNoopMeterProvider
-	_ = trace.TraceIDFromHex
-
-	_ = conv.ToInt32
-	_ = ht.NewRequest
-	_ = json.Marshal
-	_ = otelogen.Version
-	_ = uri.PathEncoder{}
-	_ = validate.Int{}
 )
 
 func (s *Server) notFound(w http.ResponseWriter, r *http.Request) {
@@ -199,6 +126,19 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 						if len(elem) == 0 {
 							// Leaf: AnswerShippingQuery
 							s.handleAnswerShippingQueryRequest([0]string{}, w, r)
+
+							return
+						}
+					case 'W': // Prefix: "WebAppQuery"
+						if l := len("WebAppQuery"); len(elem) >= l && elem[0:l] == "WebAppQuery" {
+							elem = elem[l:]
+						} else {
+							break
+						}
+
+						if len(elem) == 0 {
+							// Leaf: AnswerWebAppQuery
+							s.handleAnswerWebAppQueryRequest([0]string{}, w, r)
 
 							return
 						}
@@ -669,29 +609,56 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 							return
 						}
-					case 'M': // Prefix: "Member"
-						if l := len("Member"); len(elem) >= l && elem[0:l] == "Member" {
+					case 'M': // Prefix: "Me"
+						if l := len("Me"); len(elem) >= l && elem[0:l] == "Me" {
 							elem = elem[l:]
 						} else {
 							break
 						}
 
 						if len(elem) == 0 {
-							s.handleGetChatMemberRequest([0]string{}, w, r)
+							s.handleGetChatMenuButtonRequest([0]string{}, w, r)
 
 							return
 						}
 						switch elem[0] {
-						case 'C': // Prefix: "Count"
-							if l := len("Count"); len(elem) >= l && elem[0:l] == "Count" {
+						case 'm': // Prefix: "mber"
+							if l := len("mber"); len(elem) >= l && elem[0:l] == "mber" {
 								elem = elem[l:]
 							} else {
 								break
 							}
 
 							if len(elem) == 0 {
-								// Leaf: GetChatMemberCount
-								s.handleGetChatMemberCountRequest([0]string{}, w, r)
+								s.handleGetChatMemberRequest([0]string{}, w, r)
+
+								return
+							}
+							switch elem[0] {
+							case 'C': // Prefix: "Count"
+								if l := len("Count"); len(elem) >= l && elem[0:l] == "Count" {
+									elem = elem[l:]
+								} else {
+									break
+								}
+
+								if len(elem) == 0 {
+									// Leaf: GetChatMemberCount
+									s.handleGetChatMemberCountRequest([0]string{}, w, r)
+
+									return
+								}
+							}
+						case 'n': // Prefix: "nuButton"
+							if l := len("nuButton"); len(elem) >= l && elem[0:l] == "nuButton" {
+								elem = elem[l:]
+							} else {
+								break
+							}
+
+							if len(elem) == 0 {
+								// Leaf: GetChatMenuButton
+								s.handleGetChatMenuButtonRequest([0]string{}, w, r)
 
 								return
 							}
@@ -749,18 +716,45 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 							return
 						}
-					case 'y': // Prefix: "yCommands"
-						if l := len("yCommands"); len(elem) >= l && elem[0:l] == "yCommands" {
+					case 'y': // Prefix: "y"
+						if l := len("y"); len(elem) >= l && elem[0:l] == "y" {
 							elem = elem[l:]
 						} else {
 							break
 						}
 
 						if len(elem) == 0 {
-							// Leaf: GetMyCommands
-							s.handleGetMyCommandsRequest([0]string{}, w, r)
+							s.handleGetMyDefaultAdministratorRightsRequest([0]string{}, w, r)
 
 							return
+						}
+						switch elem[0] {
+						case 'C': // Prefix: "Commands"
+							if l := len("Commands"); len(elem) >= l && elem[0:l] == "Commands" {
+								elem = elem[l:]
+							} else {
+								break
+							}
+
+							if len(elem) == 0 {
+								// Leaf: GetMyCommands
+								s.handleGetMyCommandsRequest([0]string{}, w, r)
+
+								return
+							}
+						case 'D': // Prefix: "DefaultAdministratorRights"
+							if l := len("DefaultAdministratorRights"); len(elem) >= l && elem[0:l] == "DefaultAdministratorRights" {
+								elem = elem[l:]
+							} else {
+								break
+							}
+
+							if len(elem) == 0 {
+								// Leaf: GetMyDefaultAdministratorRights
+								s.handleGetMyDefaultAdministratorRightsRequest([0]string{}, w, r)
+
+								return
+							}
 						}
 					}
 				case 'S': // Prefix: "StickerSet"
@@ -1361,6 +1355,19 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 									return
 								}
+							case 'M': // Prefix: "MenuButton"
+								if l := len("MenuButton"); len(elem) >= l && elem[0:l] == "MenuButton" {
+									elem = elem[l:]
+								} else {
+									break
+								}
+
+								if len(elem) == 0 {
+									// Leaf: SetChatMenuButton
+									s.handleSetChatMenuButtonRequest([0]string{}, w, r)
+
+									return
+								}
 							case 'P': // Prefix: "P"
 								if l := len("P"); len(elem) >= l && elem[0:l] == "P" {
 									elem = elem[l:]
@@ -1441,18 +1448,45 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 								return
 							}
-						case 'M': // Prefix: "MyCommands"
-							if l := len("MyCommands"); len(elem) >= l && elem[0:l] == "MyCommands" {
+						case 'M': // Prefix: "My"
+							if l := len("My"); len(elem) >= l && elem[0:l] == "My" {
 								elem = elem[l:]
 							} else {
 								break
 							}
 
 							if len(elem) == 0 {
-								// Leaf: SetMyCommands
-								s.handleSetMyCommandsRequest([0]string{}, w, r)
+								s.handleSetMyDefaultAdministratorRightsRequest([0]string{}, w, r)
 
 								return
+							}
+							switch elem[0] {
+							case 'C': // Prefix: "Commands"
+								if l := len("Commands"); len(elem) >= l && elem[0:l] == "Commands" {
+									elem = elem[l:]
+								} else {
+									break
+								}
+
+								if len(elem) == 0 {
+									// Leaf: SetMyCommands
+									s.handleSetMyCommandsRequest([0]string{}, w, r)
+
+									return
+								}
+							case 'D': // Prefix: "DefaultAdministratorRights"
+								if l := len("DefaultAdministratorRights"); len(elem) >= l && elem[0:l] == "DefaultAdministratorRights" {
+									elem = elem[l:]
+								} else {
+									break
+								}
+
+								if len(elem) == 0 {
+									// Leaf: SetMyDefaultAdministratorRights
+									s.handleSetMyDefaultAdministratorRightsRequest([0]string{}, w, r)
+
+									return
+								}
 							}
 						case 'P': // Prefix: "PassportDataErrors"
 							if l := len("PassportDataErrors"); len(elem) >= l && elem[0:l] == "PassportDataErrors" {
@@ -1833,6 +1867,20 @@ func (s *Server) FindRoute(method, path string) (r Route, _ bool) {
 						if len(elem) == 0 {
 							// Leaf: AnswerShippingQuery
 							r.name = "AnswerShippingQuery"
+							r.args = args
+							r.count = 0
+							return r, true
+						}
+					case 'W': // Prefix: "WebAppQuery"
+						if l := len("WebAppQuery"); len(elem) >= l && elem[0:l] == "WebAppQuery" {
+							elem = elem[l:]
+						} else {
+							break
+						}
+
+						if len(elem) == 0 {
+							// Leaf: AnswerWebAppQuery
+							r.name = "AnswerWebAppQuery"
 							r.args = args
 							r.count = 0
 							return r, true
@@ -2339,30 +2387,59 @@ func (s *Server) FindRoute(method, path string) (r Route, _ bool) {
 							r.count = 0
 							return r, true
 						}
-					case 'M': // Prefix: "Member"
-						if l := len("Member"); len(elem) >= l && elem[0:l] == "Member" {
+					case 'M': // Prefix: "Me"
+						if l := len("Me"); len(elem) >= l && elem[0:l] == "Me" {
 							elem = elem[l:]
 						} else {
 							break
 						}
 
 						if len(elem) == 0 {
-							r.name = "GetChatMember"
+							r.name = "GetChatMenuButton"
 							r.args = args
 							r.count = 0
 							return r, true
 						}
 						switch elem[0] {
-						case 'C': // Prefix: "Count"
-							if l := len("Count"); len(elem) >= l && elem[0:l] == "Count" {
+						case 'm': // Prefix: "mber"
+							if l := len("mber"); len(elem) >= l && elem[0:l] == "mber" {
 								elem = elem[l:]
 							} else {
 								break
 							}
 
 							if len(elem) == 0 {
-								// Leaf: GetChatMemberCount
-								r.name = "GetChatMemberCount"
+								r.name = "GetChatMember"
+								r.args = args
+								r.count = 0
+								return r, true
+							}
+							switch elem[0] {
+							case 'C': // Prefix: "Count"
+								if l := len("Count"); len(elem) >= l && elem[0:l] == "Count" {
+									elem = elem[l:]
+								} else {
+									break
+								}
+
+								if len(elem) == 0 {
+									// Leaf: GetChatMemberCount
+									r.name = "GetChatMemberCount"
+									r.args = args
+									r.count = 0
+									return r, true
+								}
+							}
+						case 'n': // Prefix: "nuButton"
+							if l := len("nuButton"); len(elem) >= l && elem[0:l] == "nuButton" {
+								elem = elem[l:]
+							} else {
+								break
+							}
+
+							if len(elem) == 0 {
+								// Leaf: GetChatMenuButton
+								r.name = "GetChatMenuButton"
 								r.args = args
 								r.count = 0
 								return r, true
@@ -2425,19 +2502,48 @@ func (s *Server) FindRoute(method, path string) (r Route, _ bool) {
 							r.count = 0
 							return r, true
 						}
-					case 'y': // Prefix: "yCommands"
-						if l := len("yCommands"); len(elem) >= l && elem[0:l] == "yCommands" {
+					case 'y': // Prefix: "y"
+						if l := len("y"); len(elem) >= l && elem[0:l] == "y" {
 							elem = elem[l:]
 						} else {
 							break
 						}
 
 						if len(elem) == 0 {
-							// Leaf: GetMyCommands
-							r.name = "GetMyCommands"
+							r.name = "GetMyDefaultAdministratorRights"
 							r.args = args
 							r.count = 0
 							return r, true
+						}
+						switch elem[0] {
+						case 'C': // Prefix: "Commands"
+							if l := len("Commands"); len(elem) >= l && elem[0:l] == "Commands" {
+								elem = elem[l:]
+							} else {
+								break
+							}
+
+							if len(elem) == 0 {
+								// Leaf: GetMyCommands
+								r.name = "GetMyCommands"
+								r.args = args
+								r.count = 0
+								return r, true
+							}
+						case 'D': // Prefix: "DefaultAdministratorRights"
+							if l := len("DefaultAdministratorRights"); len(elem) >= l && elem[0:l] == "DefaultAdministratorRights" {
+								elem = elem[l:]
+							} else {
+								break
+							}
+
+							if len(elem) == 0 {
+								// Leaf: GetMyDefaultAdministratorRights
+								r.name = "GetMyDefaultAdministratorRights"
+								r.args = args
+								r.count = 0
+								return r, true
+							}
 						}
 					}
 				case 'S': // Prefix: "StickerSet"
@@ -3083,6 +3189,20 @@ func (s *Server) FindRoute(method, path string) (r Route, _ bool) {
 									r.count = 0
 									return r, true
 								}
+							case 'M': // Prefix: "MenuButton"
+								if l := len("MenuButton"); len(elem) >= l && elem[0:l] == "MenuButton" {
+									elem = elem[l:]
+								} else {
+									break
+								}
+
+								if len(elem) == 0 {
+									// Leaf: SetChatMenuButton
+									r.name = "SetChatMenuButton"
+									r.args = args
+									r.count = 0
+									return r, true
+								}
 							case 'P': // Prefix: "P"
 								if l := len("P"); len(elem) >= l && elem[0:l] == "P" {
 									elem = elem[l:]
@@ -3169,19 +3289,48 @@ func (s *Server) FindRoute(method, path string) (r Route, _ bool) {
 								r.count = 0
 								return r, true
 							}
-						case 'M': // Prefix: "MyCommands"
-							if l := len("MyCommands"); len(elem) >= l && elem[0:l] == "MyCommands" {
+						case 'M': // Prefix: "My"
+							if l := len("My"); len(elem) >= l && elem[0:l] == "My" {
 								elem = elem[l:]
 							} else {
 								break
 							}
 
 							if len(elem) == 0 {
-								// Leaf: SetMyCommands
-								r.name = "SetMyCommands"
+								r.name = "SetMyDefaultAdministratorRights"
 								r.args = args
 								r.count = 0
 								return r, true
+							}
+							switch elem[0] {
+							case 'C': // Prefix: "Commands"
+								if l := len("Commands"); len(elem) >= l && elem[0:l] == "Commands" {
+									elem = elem[l:]
+								} else {
+									break
+								}
+
+								if len(elem) == 0 {
+									// Leaf: SetMyCommands
+									r.name = "SetMyCommands"
+									r.args = args
+									r.count = 0
+									return r, true
+								}
+							case 'D': // Prefix: "DefaultAdministratorRights"
+								if l := len("DefaultAdministratorRights"); len(elem) >= l && elem[0:l] == "DefaultAdministratorRights" {
+									elem = elem[l:]
+								} else {
+									break
+								}
+
+								if len(elem) == 0 {
+									// Leaf: SetMyDefaultAdministratorRights
+									r.name = "SetMyDefaultAdministratorRights"
+									r.args = args
+									r.count = 0
+									return r, true
+								}
 							}
 						case 'P': // Prefix: "PassportDataErrors"
 							if l := len("PassportDataErrors"); len(elem) >= l && elem[0:l] == "PassportDataErrors" {

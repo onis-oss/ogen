@@ -1,6 +1,11 @@
 package ir
 
-import "github.com/ogen-go/ogen/internal/capitalize"
+import (
+	"sort"
+	"strings"
+
+	"github.com/ogen-go/ogen/internal/capitalize"
+)
 
 // JSON returns json encoding/decoding rules for t.
 func (t *Type) JSON() JSON {
@@ -143,6 +148,34 @@ func (j JSON) Type() string {
 	return jsonType(j.t)
 }
 
+func collectTypes(t *Type, types map[string]struct{}) {
+	if !t.IsSum() {
+		panic(unreachable(t))
+	}
+	for _, variant := range t.SumOf {
+		typ := variant.JSON().Type()
+		if typ == "" {
+			collectTypes(variant, types)
+			continue
+		}
+		types[typ] = struct{}{}
+	}
+}
+
+// SumTypes returns jx.Type list for this sum type.
+func (j JSON) SumTypes() string {
+	types := map[string]struct{}{}
+	collectTypes(j.t, types)
+
+	sortedTypes := make([]string, 0, len(types))
+	for k := range types {
+		sortedTypes = append(sortedTypes, "jx."+k)
+	}
+	sort.Strings(sortedTypes)
+
+	return strings.Join(sortedTypes, ",")
+}
+
 func jsonType(t *Type) string {
 	if t.IsNumeric() {
 		return "Number"
@@ -164,6 +197,8 @@ func jsonType(t *Type) string {
 		return "Bool"
 	case String, Time, Duration, UUID, IP, URL, ByteSlice:
 		return "String"
+	case Null:
+		return "Null"
 	default:
 		return ""
 	}

@@ -6,8 +6,8 @@ import (
 
 	"github.com/go-faster/errors"
 
+	"github.com/ogen-go/ogen/gen/ir"
 	"github.com/ogen-go/ogen/internal/capitalize"
-	"github.com/ogen-go/ogen/internal/ir"
 	"github.com/ogen-go/ogen/jsonschema"
 )
 
@@ -59,8 +59,12 @@ func (g *schemaGen) generate(name string, schema *jsonschema.Schema) (_ *ir.Type
 		return nil, &ErrNotImplemented{Name: "object defaults"}
 	}
 
-	if name[0] >= '0' && name[0] <= '9' {
-		name = "R" + name
+	if n := schema.XOgenName; n != "" {
+		name = n
+	} else {
+		if len(name) > 0 && name[0] >= '0' && name[0] <= '9' {
+			name = "R" + name
+		}
 	}
 
 	side := func(t *ir.Type) *ir.Type {
@@ -233,7 +237,7 @@ func (g *schemaGen) generate(name string, schema *jsonschema.Schema) (_ *ir.Type
 
 		return ret, nil
 
-	case jsonschema.String, jsonschema.Integer, jsonschema.Number, jsonschema.Boolean:
+	case jsonschema.String, jsonschema.Integer, jsonschema.Number, jsonschema.Boolean, jsonschema.Null:
 		t, err := g.primitive(name, schema)
 		if err != nil {
 			return nil, errors.Wrap(err, "primitive")

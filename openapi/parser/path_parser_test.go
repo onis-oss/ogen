@@ -5,36 +5,36 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/ogen-go/ogen/internal/oas"
 	"github.com/ogen-go/ogen/jsonschema"
+	"github.com/ogen-go/ogen/openapi"
 )
 
 func TestPathParser(t *testing.T) {
 	var (
-		bar = &oas.Parameter{
+		bar = &openapi.Parameter{
 			Name:   "bar",
 			Schema: &jsonschema.Schema{Type: jsonschema.Integer},
-			In:     oas.LocationPath,
+			In:     openapi.LocationPath,
 		}
-		baz = &oas.Parameter{
+		baz = &openapi.Parameter{
 			Name:   "baz",
 			Schema: &jsonschema.Schema{Type: jsonschema.String},
-			In:     oas.LocationPath,
+			In:     openapi.LocationPath,
 		}
 	)
 
 	tests := []struct {
 		Name      string
 		Path      string
-		Params    []*oas.Parameter
-		Expect    []oas.PathPart
+		Params    []*openapi.Parameter
+		Expect    []openapi.PathPart
 		ExpectErr string
 	}{
 		{
 			Name:   "test1",
 			Path:   "/foo/{bar}",
-			Params: []*oas.Parameter{bar},
-			Expect: []oas.PathPart{
+			Params: []*openapi.Parameter{bar},
+			Expect: []openapi.PathPart{
 				{Raw: "/foo/"},
 				{Param: bar},
 			},
@@ -42,8 +42,8 @@ func TestPathParser(t *testing.T) {
 		{
 			Name:   "test2",
 			Path:   "/foo.{bar}",
-			Params: []*oas.Parameter{bar},
-			Expect: []oas.PathPart{
+			Params: []*openapi.Parameter{bar},
+			Expect: []openapi.PathPart{
 				{Raw: "/foo."},
 				{Param: bar},
 			},
@@ -51,8 +51,8 @@ func TestPathParser(t *testing.T) {
 		{
 			Name:   "test3",
 			Path:   "/foo.{bar}.{baz}abc/def",
-			Params: []*oas.Parameter{bar, baz},
-			Expect: []oas.PathPart{
+			Params: []*openapi.Parameter{bar, baz},
+			Expect: []openapi.PathPart{
 				{Raw: "/foo."},
 				{Param: bar},
 				{Raw: "."},
@@ -63,7 +63,7 @@ func TestPathParser(t *testing.T) {
 		{
 			Name:      "test4",
 			Path:      "/foo/{bar}/{baz}",
-			Params:    []*oas.Parameter{bar},
+			Params:    []*openapi.Parameter{bar},
 			ExpectErr: `path parameter not specified: "baz"`,
 		},
 	}

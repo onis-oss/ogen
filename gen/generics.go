@@ -5,7 +5,7 @@ import (
 
 	"github.com/go-faster/errors"
 
-	"github.com/ogen-go/ogen/internal/ir"
+	"github.com/ogen-go/ogen/gen/ir"
 )
 
 func boxStructFields(ctx *genctx, s *ir.Type) error {
@@ -59,6 +59,13 @@ func boxType(ctx *genctx, v ir.GenericVariant, t *ir.Type) (*ir.Type, error) {
 	//  * type is not nullable and not optional
 	if t.IsAny() || t.IsStream() || !v.Any() {
 		return t, nil
+	}
+	// Do not wrap if type is Null primitive and generic is nullable only.
+	if t.IsNull() {
+		if v.OnlyNullable() {
+			return t, nil
+		}
+		v.Nullable = false
 	}
 
 	if t.IsArray() || t.Primitive == ir.ByteSlice {

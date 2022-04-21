@@ -6,18 +6,18 @@ import (
 	"github.com/go-faster/errors"
 
 	"github.com/ogen-go/ogen"
-	"github.com/ogen-go/ogen/internal/oas"
+	"github.com/ogen-go/ogen/openapi"
 )
 
-func (p *parser) parseParams(params []*ogen.Parameter) ([]*oas.Parameter, error) {
+func (p *parser) parseParams(params []*ogen.Parameter) ([]*openapi.Parameter, error) {
 	// Unique parameter is defined by a combination of a name and location.
 	type pnameLoc struct {
 		name     string
-		location oas.ParameterLocation
+		location openapi.ParameterLocation
 	}
 
 	var (
-		result = make([]*oas.Parameter, 0, len(params))
+		result = make([]*openapi.Parameter, 0, len(params))
 		unique = make(map[pnameLoc]struct{})
 	)
 
@@ -46,7 +46,7 @@ func (p *parser) parseParams(params []*ogen.Parameter) ([]*oas.Parameter, error)
 	return result, nil
 }
 
-func (p *parser) parseParameter(param *ogen.Parameter, ctx resolveCtx) (*oas.Parameter, error) {
+func (p *parser) parseParameter(param *ogen.Parameter, ctx resolveCtx) (*openapi.Parameter, error) {
 	if ref := param.Ref; ref != "" {
 		parsed, err := p.resolveParameter(ref, ctx)
 		if err != nil {
@@ -55,11 +55,11 @@ func (p *parser) parseParameter(param *ogen.Parameter, ctx resolveCtx) (*oas.Par
 		return parsed, nil
 	}
 
-	types := map[string]oas.ParameterLocation{
-		"query":  oas.LocationQuery,
-		"header": oas.LocationHeader,
-		"path":   oas.LocationPath,
-		"cookie": oas.LocationCookie,
+	types := map[string]openapi.ParameterLocation{
+		"query":  openapi.LocationQuery,
+		"header": openapi.LocationHeader,
+		"path":   openapi.LocationPath,
+		"cookie": openapi.LocationCookie,
 	}
 
 	locatedIn, exists := types[strings.ToLower(param.In)]
@@ -68,7 +68,7 @@ func (p *parser) parseParameter(param *ogen.Parameter, ctx resolveCtx) (*oas.Par
 	}
 
 	// Path parameters are always required.
-	if locatedIn == oas.LocationPath && !param.Required {
+	if locatedIn == openapi.LocationPath && !param.Required {
 		return nil, errors.New("path parameters must be required")
 	}
 
@@ -81,7 +81,7 @@ func (p *parser) parseParameter(param *ogen.Parameter, ctx resolveCtx) (*oas.Par
 	if err != nil {
 		return nil, errors.Wrap(err, "style")
 	}
-	return &oas.Parameter{
+	return &openapi.Parameter{
 		Name:        param.Name,
 		Description: param.Description,
 		In:          locatedIn,
@@ -94,36 +94,36 @@ func (p *parser) parseParameter(param *ogen.Parameter, ctx resolveCtx) (*oas.Par
 
 // paramStyle checks parameter style field.
 // https://swagger.io/docs/specification/serialization/
-func paramStyle(locatedIn oas.ParameterLocation, style string) (oas.ParameterStyle, error) {
+func paramStyle(locatedIn openapi.ParameterLocation, style string) (openapi.ParameterStyle, error) {
 	if style == "" {
-		defaultStyles := map[oas.ParameterLocation]oas.ParameterStyle{
-			oas.LocationPath:   oas.PathStyleSimple,
-			oas.LocationQuery:  oas.QueryStyleForm,
-			oas.LocationHeader: oas.HeaderStyleSimple,
-			oas.LocationCookie: oas.CookieStyleForm,
+		defaultStyles := map[openapi.ParameterLocation]openapi.ParameterStyle{
+			openapi.LocationPath:   openapi.PathStyleSimple,
+			openapi.LocationQuery:  openapi.QueryStyleForm,
+			openapi.LocationHeader: openapi.HeaderStyleSimple,
+			openapi.LocationCookie: openapi.CookieStyleForm,
 		}
 
 		return defaultStyles[locatedIn], nil
 	}
 
-	allowedStyles := map[oas.ParameterLocation]map[string]oas.ParameterStyle{
-		oas.LocationPath: {
-			"simple": oas.PathStyleSimple,
-			"label":  oas.PathStyleLabel,
-			"matrix": oas.PathStyleMatrix,
+	allowedStyles := map[openapi.ParameterLocation]map[string]openapi.ParameterStyle{
+		openapi.LocationPath: {
+			"simple": openapi.PathStyleSimple,
+			"label":  openapi.PathStyleLabel,
+			"matrix": openapi.PathStyleMatrix,
 		},
-		oas.LocationQuery: {
-			"form": oas.QueryStyleForm,
+		openapi.LocationQuery: {
+			"form": openapi.QueryStyleForm,
 			// Not supported.
 			// "spaceDelimited": struct{}{},
-			"pipeDelimited": oas.QueryStylePipeDelimited,
-			"deepObject":    oas.QueryStyleDeepObject,
+			"pipeDelimited": openapi.QueryStylePipeDelimited,
+			"deepObject":    openapi.QueryStyleDeepObject,
 		},
-		oas.LocationHeader: {
-			"simple": oas.HeaderStyleSimple,
+		openapi.LocationHeader: {
+			"simple": openapi.HeaderStyleSimple,
 		},
-		oas.LocationCookie: {
-			"form": oas.CookieStyleForm,
+		openapi.LocationCookie: {
+			"form": openapi.CookieStyleForm,
 		},
 	}
 
@@ -137,14 +137,14 @@ func paramStyle(locatedIn oas.ParameterLocation, style string) (oas.ParameterSty
 
 // paramExplode checks parameter explode field.
 // https://swagger.io/docs/specification/serialization/
-func paramExplode(locatedIn oas.ParameterLocation, explode *bool) bool {
+func paramExplode(locatedIn openapi.ParameterLocation, explode *bool) bool {
 	if explode != nil {
 		return *explode
 	}
 
 	// When style is form, the default value is true.
 	// For all other styles, the default value is false.
-	if locatedIn == oas.LocationQuery || locatedIn == oas.LocationCookie {
+	if locatedIn == openapi.LocationQuery || locatedIn == openapi.LocationCookie {
 		return true
 	}
 

@@ -5,78 +5,20 @@ package api
 import (
 	"bytes"
 	"context"
-	"fmt"
-	"io"
-	"math"
-	"math/big"
-	"math/bits"
-	"net"
 	"net/http"
-	"net/netip"
-	"net/url"
 	"regexp"
-	"sort"
-	"strconv"
-	"strings"
 	"sync"
-	"time"
 
 	"github.com/go-faster/errors"
-	"github.com/go-faster/jx"
-	"github.com/google/uuid"
 	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/metric"
-	"go.opentelemetry.io/otel/metric/instrument/syncint64"
 	"go.opentelemetry.io/otel/metric/nonrecording"
 	"go.opentelemetry.io/otel/trace"
 
-	"github.com/ogen-go/ogen/conv"
 	ht "github.com/ogen-go/ogen/http"
 	"github.com/ogen-go/ogen/json"
+	"github.com/ogen-go/ogen/ogenerrors"
 	"github.com/ogen-go/ogen/otelogen"
-	"github.com/ogen-go/ogen/uri"
-	"github.com/ogen-go/ogen/validate"
-)
-
-// No-op definition for keeping imports.
-var (
-	_ = bytes.NewReader
-	_ = context.Background()
-	_ = fmt.Stringer(nil)
-	_ = io.Copy
-	_ = math.Mod
-	_ = big.Rat{}
-	_ = bits.LeadingZeros64
-	_ = net.IP{}
-	_ = http.MethodGet
-	_ = netip.Addr{}
-	_ = url.URL{}
-	_ = regexp.MustCompile
-	_ = sort.Ints
-	_ = strconv.ParseInt
-	_ = strings.Builder{}
-	_ = sync.Pool{}
-	_ = time.Time{}
-
-	_ = errors.Is
-	_ = jx.Null
-	_ = uuid.UUID{}
-	_ = otel.GetTracerProvider
-	_ = attribute.KeyValue{}
-	_ = codes.Unset
-	_ = metric.MeterConfig{}
-	_ = syncint64.Counter(nil)
-	_ = nonrecording.NewNoopMeterProvider
-	_ = trace.TraceIDFromHex
-
-	_ = conv.ToInt32
-	_ = ht.NewRequest
-	_ = json.Marshal
-	_ = otelogen.Version
-	_ = uri.PathEncoder{}
-	_ = validate.Int{}
 )
 
 var regexMap = map[string]*regexp.Regexp{
@@ -101,6 +43,32 @@ func putBuf(b *bytes.Buffer) {
 	bufPool.Put(b)
 }
 
+// ErrorHandler is error handler.
+type ErrorHandler func(ctx context.Context, w http.ResponseWriter, r *http.Request, err error)
+
+func respondError(ctx context.Context, w http.ResponseWriter, r *http.Request, err error) {
+	var (
+		code    = http.StatusInternalServerError
+		ogenErr ogenerrors.Error
+	)
+	switch {
+	case errors.Is(err, ht.ErrNotImplemented):
+		code = http.StatusNotImplemented
+	case errors.As(err, &ogenErr):
+		code = ogenErr.Code()
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(code)
+	data, writeErr := json.Marshal(struct {
+		ErrorMessage string `json:"error_message"`
+	}{
+		ErrorMessage: err.Error(),
+	})
+	if writeErr == nil {
+		w.Write(data)
+	}
+}
+
 type config struct {
 	TracerProvider trace.TracerProvider
 	Tracer         trace.Tracer
@@ -108,6 +76,7 @@ type config struct {
 	Meter          metric.Meter
 	Client         ht.Client
 	NotFound       http.HandlerFunc
+	ErrorHandler   ErrorHandler
 }
 
 func newConfig(opts ...Option) config {
@@ -116,6 +85,7 @@ func newConfig(opts ...Option) config {
 		MeterProvider:  nonrecording.NewNoopMeterProvider(),
 		Client:         http.DefaultClient,
 		NotFound:       http.NotFound,
+		ErrorHandler:   respondError,
 	}
 	for _, opt := range opts {
 		opt.apply(&cfg)
@@ -168,11 +138,20 @@ func WithClient(client ht.Client) Option {
 	})
 }
 
-// WithNotFound specifies http handler to use.
+// WithNotFound specifies Not Found handler to use.
 func WithNotFound(notFound http.HandlerFunc) Option {
 	return optionFunc(func(cfg *config) {
 		if notFound != nil {
 			cfg.NotFound = notFound
+		}
+	})
+}
+
+// WithErrorHandler specifies error handler to use.
+func WithErrorHandler(h ErrorHandler) Option {
+	return optionFunc(func(cfg *config) {
+		if h != nil {
+			cfg.ErrorHandler = h
 		}
 	})
 }

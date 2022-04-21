@@ -3,80 +3,15 @@
 package api
 
 import (
-	"bytes"
 	"context"
-	"fmt"
-	"io"
-	"math"
-	"math/big"
-	"math/bits"
-	"net"
-	"net/http"
 	"net/netip"
 	"net/url"
-	"regexp"
-	"sort"
-	"strconv"
-	"strings"
-	"sync"
 	"time"
 
-	"github.com/go-faster/errors"
 	"github.com/go-faster/jx"
 	"github.com/google/uuid"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/codes"
-	"go.opentelemetry.io/otel/metric"
-	"go.opentelemetry.io/otel/metric/instrument/syncint64"
-	"go.opentelemetry.io/otel/metric/nonrecording"
-	"go.opentelemetry.io/otel/trace"
 
-	"github.com/ogen-go/ogen/conv"
 	ht "github.com/ogen-go/ogen/http"
-	"github.com/ogen-go/ogen/json"
-	"github.com/ogen-go/ogen/otelogen"
-	"github.com/ogen-go/ogen/uri"
-	"github.com/ogen-go/ogen/validate"
-)
-
-// No-op definition for keeping imports.
-var (
-	_ = bytes.NewReader
-	_ = context.Background()
-	_ = fmt.Stringer(nil)
-	_ = io.Copy
-	_ = math.Mod
-	_ = big.Rat{}
-	_ = bits.LeadingZeros64
-	_ = net.IP{}
-	_ = http.MethodGet
-	_ = netip.Addr{}
-	_ = url.URL{}
-	_ = regexp.MustCompile
-	_ = sort.Ints
-	_ = strconv.ParseInt
-	_ = strings.Builder{}
-	_ = sync.Pool{}
-	_ = time.Time{}
-
-	_ = errors.Is
-	_ = jx.Null
-	_ = uuid.UUID{}
-	_ = otel.GetTracerProvider
-	_ = attribute.KeyValue{}
-	_ = codes.Unset
-	_ = metric.MeterConfig{}
-	_ = syncint64.Counter(nil)
-	_ = nonrecording.NewNoopMeterProvider
-	_ = trace.TraceIDFromHex
-
-	_ = conv.ToInt32
-	_ = ht.NewRequest
-	_ = json.Marshal
-	_ = otelogen.Version
-	_ = uri.PathEncoder{}
-	_ = validate.Int{}
 )
 
 var _ Handler = UnimplementedHandler{}
@@ -270,6 +205,48 @@ func (UnimplementedHandler) TestRequestIntegerNullableArray(ctx context.Context,
 //
 // POST /test_request_integer_nullable_array_array
 func (UnimplementedHandler) TestRequestIntegerNullableArrayArray(ctx context.Context, req [][]int) (r Error, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// TestRequestNull implements test_request_null operation.
+//
+// POST /test_request_null
+func (UnimplementedHandler) TestRequestNull(ctx context.Context, req OptStruct) (r Error, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// TestRequestNullArray implements test_request_null_array operation.
+//
+// POST /test_request_null_array
+func (UnimplementedHandler) TestRequestNullArray(ctx context.Context, req []struct{}) (r Error, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// TestRequestNullArrayArray implements test_request_null_array_array operation.
+//
+// POST /test_request_null_array_array
+func (UnimplementedHandler) TestRequestNullArrayArray(ctx context.Context, req [][]struct{}) (r Error, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// TestRequestNullNullable implements test_request_null_nullable operation.
+//
+// POST /test_request_null_nullable
+func (UnimplementedHandler) TestRequestNullNullable(ctx context.Context, req OptStruct) (r Error, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// TestRequestNullNullableArray implements test_request_null_nullable_array operation.
+//
+// POST /test_request_null_nullable_array
+func (UnimplementedHandler) TestRequestNullNullableArray(ctx context.Context, req []struct{}) (r Error, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// TestRequestNullNullableArrayArray implements test_request_null_nullable_array_array operation.
+//
+// POST /test_request_null_nullable_array_array
+func (UnimplementedHandler) TestRequestNullNullableArrayArray(ctx context.Context, req [][]struct{}) (r Error, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -669,6 +646,48 @@ func (UnimplementedHandler) TestRequestRequiredIntegerNullableArray(ctx context.
 //
 // POST /test_request_required_integer_nullable_array_array
 func (UnimplementedHandler) TestRequestRequiredIntegerNullableArrayArray(ctx context.Context, req [][]int) (r Error, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// TestRequestRequiredNull implements test_request_required_null operation.
+//
+// POST /test_request_required_null
+func (UnimplementedHandler) TestRequestRequiredNull(ctx context.Context, req struct{}) (r Error, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// TestRequestRequiredNullArray implements test_request_required_null_array operation.
+//
+// POST /test_request_required_null_array
+func (UnimplementedHandler) TestRequestRequiredNullArray(ctx context.Context, req []struct{}) (r Error, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// TestRequestRequiredNullArrayArray implements test_request_required_null_array_array operation.
+//
+// POST /test_request_required_null_array_array
+func (UnimplementedHandler) TestRequestRequiredNullArrayArray(ctx context.Context, req [][]struct{}) (r Error, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// TestRequestRequiredNullNullable implements test_request_required_null_nullable operation.
+//
+// POST /test_request_required_null_nullable
+func (UnimplementedHandler) TestRequestRequiredNullNullable(ctx context.Context, req struct{}) (r Error, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// TestRequestRequiredNullNullableArray implements test_request_required_null_nullable_array operation.
+//
+// POST /test_request_required_null_nullable_array
+func (UnimplementedHandler) TestRequestRequiredNullNullableArray(ctx context.Context, req []struct{}) (r Error, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// TestRequestRequiredNullNullableArrayArray implements test_request_required_null_nullable_array_array operation.
+//
+// POST /test_request_required_null_nullable_array_array
+func (UnimplementedHandler) TestRequestRequiredNullNullableArrayArray(ctx context.Context, req [][]struct{}) (r Error, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -2328,6 +2347,48 @@ func (UnimplementedHandler) TestResponseIntegerNullableArray(ctx context.Context
 //
 // POST /test_response_integer_nullable_array_array
 func (UnimplementedHandler) TestResponseIntegerNullableArrayArray(ctx context.Context, req string) (r [][]int, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// TestResponseNull implements test_response_null operation.
+//
+// POST /test_response_null
+func (UnimplementedHandler) TestResponseNull(ctx context.Context, req string) (r struct{}, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// TestResponseNullArray implements test_response_null_array operation.
+//
+// POST /test_response_null_array
+func (UnimplementedHandler) TestResponseNullArray(ctx context.Context, req string) (r []struct{}, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// TestResponseNullArrayArray implements test_response_null_array_array operation.
+//
+// POST /test_response_null_array_array
+func (UnimplementedHandler) TestResponseNullArrayArray(ctx context.Context, req string) (r [][]struct{}, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// TestResponseNullNullable implements test_response_null_nullable operation.
+//
+// POST /test_response_null_nullable
+func (UnimplementedHandler) TestResponseNullNullable(ctx context.Context, req string) (r struct{}, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// TestResponseNullNullableArray implements test_response_null_nullable_array operation.
+//
+// POST /test_response_null_nullable_array
+func (UnimplementedHandler) TestResponseNullNullableArray(ctx context.Context, req string) (r []struct{}, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// TestResponseNullNullableArrayArray implements test_response_null_nullable_array_array operation.
+//
+// POST /test_response_null_nullable_array_array
+func (UnimplementedHandler) TestResponseNullNullableArrayArray(ctx context.Context, req string) (r [][]struct{}, _ error) {
 	return r, ht.ErrNotImplemented
 }
 

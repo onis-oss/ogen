@@ -3,80 +3,14 @@
 package api
 
 import (
-	"bytes"
-	"context"
-	"fmt"
 	"io"
-	"math"
-	"math/big"
-	"math/bits"
-	"net"
 	"net/http"
-	"net/netip"
-	"net/url"
-	"regexp"
-	"sort"
-	"strconv"
-	"strings"
-	"sync"
-	"time"
 
 	"github.com/go-faster/errors"
 	"github.com/go-faster/jx"
-	"github.com/google/uuid"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/codes"
-	"go.opentelemetry.io/otel/metric"
-	"go.opentelemetry.io/otel/metric/instrument/syncint64"
-	"go.opentelemetry.io/otel/metric/nonrecording"
 	"go.opentelemetry.io/otel/trace"
 
-	"github.com/ogen-go/ogen/conv"
-	ht "github.com/ogen-go/ogen/http"
-	"github.com/ogen-go/ogen/json"
-	"github.com/ogen-go/ogen/otelogen"
-	"github.com/ogen-go/ogen/uri"
 	"github.com/ogen-go/ogen/validate"
-)
-
-// No-op definition for keeping imports.
-var (
-	_ = bytes.NewReader
-	_ = context.Background()
-	_ = fmt.Stringer(nil)
-	_ = io.Copy
-	_ = math.Mod
-	_ = big.Rat{}
-	_ = bits.LeadingZeros64
-	_ = net.IP{}
-	_ = http.MethodGet
-	_ = netip.Addr{}
-	_ = url.URL{}
-	_ = regexp.MustCompile
-	_ = sort.Ints
-	_ = strconv.ParseInt
-	_ = strings.Builder{}
-	_ = sync.Pool{}
-	_ = time.Time{}
-
-	_ = errors.Is
-	_ = jx.Null
-	_ = uuid.UUID{}
-	_ = otel.GetTracerProvider
-	_ = attribute.KeyValue{}
-	_ = codes.Unset
-	_ = metric.MeterConfig{}
-	_ = syncint64.Counter(nil)
-	_ = nonrecording.NewNoopMeterProvider
-	_ = trace.TraceIDFromHex
-
-	_ = conv.ToInt32
-	_ = ht.NewRequest
-	_ = json.Marshal
-	_ = otelogen.Version
-	_ = uri.PathEncoder{}
-	_ = validate.Int{}
 )
 
 func decodeAddStickerToSetRequest(r *http.Request, span trace.Span) (req AddStickerToSet, err error) {
@@ -284,6 +218,50 @@ func decodeAnswerShippingQueryRequest(r *http.Request, span trace.Span) (req Ans
 			return nil
 		}(); err != nil {
 			return req, errors.Wrap(err, "validate AnswerShippingQuery request")
+		}
+		return request, nil
+	default:
+		return req, validate.InvalidContentType(ct)
+	}
+}
+
+func decodeAnswerWebAppQueryRequest(r *http.Request, span trace.Span) (req AnswerWebAppQuery, err error) {
+	switch ct := r.Header.Get("Content-Type"); ct {
+	case "application/json":
+		if r.ContentLength == 0 {
+			return req, validate.ErrBodyRequired
+		}
+
+		var request AnswerWebAppQuery
+		buf := getBuf()
+		defer putBuf(buf)
+		written, err := io.Copy(buf, r.Body)
+		if err != nil {
+			return req, err
+		}
+
+		if written == 0 {
+			return req, validate.ErrBodyRequired
+		}
+
+		d := jx.GetDecoder()
+		defer jx.PutDecoder(d)
+		d.ResetBytes(buf.Bytes())
+		if err := func() error {
+			if err := request.Decode(d); err != nil {
+				return err
+			}
+			return nil
+		}(); err != nil {
+			return req, errors.Wrap(err, "decode AnswerWebAppQuery:application/json request")
+		}
+		if err := func() error {
+			if err := request.Validate(); err != nil {
+				return err
+			}
+			return nil
+		}(); err != nil {
+			return req, errors.Wrap(err, "validate AnswerWebAppQuery request")
 		}
 		return request, nil
 	default:
@@ -1265,6 +1243,43 @@ func decodeGetChatMemberCountRequest(r *http.Request, span trace.Span) (req GetC
 	}
 }
 
+func decodeGetChatMenuButtonRequest(r *http.Request, span trace.Span) (req OptGetChatMenuButton, err error) {
+	switch ct := r.Header.Get("Content-Type"); ct {
+	case "application/json":
+		if r.ContentLength == 0 {
+			return req, nil
+		}
+
+		var request OptGetChatMenuButton
+		buf := getBuf()
+		defer putBuf(buf)
+		written, err := io.Copy(buf, r.Body)
+		if err != nil {
+			return req, err
+		}
+
+		if written == 0 {
+			return req, nil
+		}
+
+		d := jx.GetDecoder()
+		defer jx.PutDecoder(d)
+		d.ResetBytes(buf.Bytes())
+		if err := func() error {
+			request.Reset()
+			if err := request.Decode(d); err != nil {
+				return err
+			}
+			return nil
+		}(); err != nil {
+			return req, errors.Wrap(err, "decode GetChatMenuButton:application/json request")
+		}
+		return request, nil
+	default:
+		return req, validate.InvalidContentType(ct)
+	}
+}
+
 func decodeGetFileRequest(r *http.Request, span trace.Span) (req GetFile, err error) {
 	switch ct := r.Header.Get("Content-Type"); ct {
 	case "application/json":
@@ -1367,6 +1382,43 @@ func decodeGetMyCommandsRequest(r *http.Request, span trace.Span) (req OptGetMyC
 			return nil
 		}(); err != nil {
 			return req, errors.Wrap(err, "decode GetMyCommands:application/json request")
+		}
+		return request, nil
+	default:
+		return req, validate.InvalidContentType(ct)
+	}
+}
+
+func decodeGetMyDefaultAdministratorRightsRequest(r *http.Request, span trace.Span) (req OptGetMyDefaultAdministratorRights, err error) {
+	switch ct := r.Header.Get("Content-Type"); ct {
+	case "application/json":
+		if r.ContentLength == 0 {
+			return req, nil
+		}
+
+		var request OptGetMyDefaultAdministratorRights
+		buf := getBuf()
+		defer putBuf(buf)
+		written, err := io.Copy(buf, r.Body)
+		if err != nil {
+			return req, err
+		}
+
+		if written == 0 {
+			return req, nil
+		}
+
+		d := jx.GetDecoder()
+		defer jx.PutDecoder(d)
+		d.ResetBytes(buf.Bytes())
+		if err := func() error {
+			request.Reset()
+			if err := request.Decode(d); err != nil {
+				return err
+			}
+			return nil
+		}(); err != nil {
+			return req, errors.Wrap(err, "decode GetMyDefaultAdministratorRights:application/json request")
 		}
 		return request, nil
 	default:
@@ -2559,6 +2611,43 @@ func decodeSetChatDescriptionRequest(r *http.Request, span trace.Span) (req SetC
 	}
 }
 
+func decodeSetChatMenuButtonRequest(r *http.Request, span trace.Span) (req OptSetChatMenuButton, err error) {
+	switch ct := r.Header.Get("Content-Type"); ct {
+	case "application/json":
+		if r.ContentLength == 0 {
+			return req, nil
+		}
+
+		var request OptSetChatMenuButton
+		buf := getBuf()
+		defer putBuf(buf)
+		written, err := io.Copy(buf, r.Body)
+		if err != nil {
+			return req, err
+		}
+
+		if written == 0 {
+			return req, nil
+		}
+
+		d := jx.GetDecoder()
+		defer jx.PutDecoder(d)
+		d.ResetBytes(buf.Bytes())
+		if err := func() error {
+			request.Reset()
+			if err := request.Decode(d); err != nil {
+				return err
+			}
+			return nil
+		}(); err != nil {
+			return req, errors.Wrap(err, "decode SetChatMenuButton:application/json request")
+		}
+		return request, nil
+	default:
+		return req, validate.InvalidContentType(ct)
+	}
+}
+
 func decodeSetChatPermissionsRequest(r *http.Request, span trace.Span) (req SetChatPermissions, err error) {
 	switch ct := r.Header.Get("Content-Type"); ct {
 	case "application/json":
@@ -2784,6 +2873,43 @@ func decodeSetMyCommandsRequest(r *http.Request, span trace.Span) (req SetMyComm
 			return nil
 		}(); err != nil {
 			return req, errors.Wrap(err, "validate SetMyCommands request")
+		}
+		return request, nil
+	default:
+		return req, validate.InvalidContentType(ct)
+	}
+}
+
+func decodeSetMyDefaultAdministratorRightsRequest(r *http.Request, span trace.Span) (req OptSetMyDefaultAdministratorRights, err error) {
+	switch ct := r.Header.Get("Content-Type"); ct {
+	case "application/json":
+		if r.ContentLength == 0 {
+			return req, nil
+		}
+
+		var request OptSetMyDefaultAdministratorRights
+		buf := getBuf()
+		defer putBuf(buf)
+		written, err := io.Copy(buf, r.Body)
+		if err != nil {
+			return req, err
+		}
+
+		if written == 0 {
+			return req, nil
+		}
+
+		d := jx.GetDecoder()
+		defer jx.PutDecoder(d)
+		d.ResetBytes(buf.Bytes())
+		if err := func() error {
+			request.Reset()
+			if err := request.Decode(d); err != nil {
+				return err
+			}
+			return nil
+		}(); err != nil {
+			return req, errors.Wrap(err, "decode SetMyDefaultAdministratorRights:application/json request")
 		}
 		return request, nil
 	default:

@@ -3,80 +3,13 @@
 package api
 
 import (
-	"bytes"
-	"context"
-	"fmt"
 	"io"
-	"math"
-	"math/big"
-	"math/bits"
-	"net"
-	"net/http"
 	"net/netip"
 	"net/url"
-	"regexp"
-	"sort"
-	"strconv"
-	"strings"
-	"sync"
 	"time"
 
-	"github.com/go-faster/errors"
 	"github.com/go-faster/jx"
 	"github.com/google/uuid"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/codes"
-	"go.opentelemetry.io/otel/metric"
-	"go.opentelemetry.io/otel/metric/instrument/syncint64"
-	"go.opentelemetry.io/otel/metric/nonrecording"
-	"go.opentelemetry.io/otel/trace"
-
-	"github.com/ogen-go/ogen/conv"
-	ht "github.com/ogen-go/ogen/http"
-	"github.com/ogen-go/ogen/json"
-	"github.com/ogen-go/ogen/otelogen"
-	"github.com/ogen-go/ogen/uri"
-	"github.com/ogen-go/ogen/validate"
-)
-
-// No-op definition for keeping imports.
-var (
-	_ = bytes.NewReader
-	_ = context.Background()
-	_ = fmt.Stringer(nil)
-	_ = io.Copy
-	_ = math.Mod
-	_ = big.Rat{}
-	_ = bits.LeadingZeros64
-	_ = net.IP{}
-	_ = http.MethodGet
-	_ = netip.Addr{}
-	_ = url.URL{}
-	_ = regexp.MustCompile
-	_ = sort.Ints
-	_ = strconv.ParseInt
-	_ = strings.Builder{}
-	_ = sync.Pool{}
-	_ = time.Time{}
-
-	_ = errors.Is
-	_ = jx.Null
-	_ = uuid.UUID{}
-	_ = otel.GetTracerProvider
-	_ = attribute.KeyValue{}
-	_ = codes.Unset
-	_ = metric.MeterConfig{}
-	_ = syncint64.Counter(nil)
-	_ = nonrecording.NewNoopMeterProvider
-	_ = trace.TraceIDFromHex
-
-	_ = conv.ToInt32
-	_ = ht.NewRequest
-	_ = json.Marshal
-	_ = otelogen.Version
-	_ = uri.PathEncoder{}
-	_ = validate.Int{}
 )
 
 type APIKey struct {
@@ -779,6 +712,8 @@ func (*NotFound) foobarPostRes()          {}
 func (*NotFound) petGetAvatarByIDRes()    {}
 func (*NotFound) petGetAvatarByNameRes()  {}
 func (*NotFound) petUploadAvatarByIDRes() {}
+
+type NullValue struct{}
 
 // Ref: #/components/schemas/NullableEnums
 type NullableEnums struct {
@@ -2048,6 +1983,52 @@ func (o OptNilStringArray) Or(d []string) []string {
 	return d
 }
 
+// NewOptNullValue returns new OptNullValue with value set to v.
+func NewOptNullValue(v NullValue) OptNullValue {
+	return OptNullValue{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptNullValue is optional NullValue.
+type OptNullValue struct {
+	Value NullValue
+	Set   bool
+}
+
+// IsSet returns true if OptNullValue was set.
+func (o OptNullValue) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptNullValue) Reset() {
+	var v NullValue
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptNullValue) SetTo(v NullValue) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptNullValue) Get() (v NullValue, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptNullValue) Or(d NullValue) NullValue {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptNullableEnums returns new OptNullableEnums with value set to v.
 func NewOptNullableEnums(v NullableEnums) OptNullableEnums {
 	return OptNullableEnums{
@@ -2783,6 +2764,7 @@ type Pet struct {
 	TestDuration      OptDuration          "json:\"testDuration\""
 	TestTime          OptTime              "json:\"testTime\""
 	TestDateTime      OptDateTime          "json:\"testDateTime\""
+	NullValue         OptNullValue         "json:\"nullValue\""
 }
 
 func (*Pet) foobarGetRes()  {}

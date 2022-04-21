@@ -5,13 +5,13 @@ import (
 
 	"github.com/go-faster/errors"
 
-	"github.com/ogen-go/ogen/internal/ir"
-	"github.com/ogen-go/ogen/internal/oas"
+	"github.com/ogen-go/ogen/gen/ir"
+	"github.com/ogen-go/ogen/openapi"
 )
 
 // reduceDefault implements convenient errors, representing common default
 // response as error instead of variant of each response.
-func (g *Generator) reduceDefault(ops []*oas.Operation) error {
+func (g *Generator) reduceDefault(ops []*openapi.Operation) error {
 	if len(ops) < 1 {
 		return nil
 	}

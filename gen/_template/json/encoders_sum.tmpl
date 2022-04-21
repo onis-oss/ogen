@@ -1,4 +1,4 @@
-{{- /*gotype: github.com/ogen-go/ogen/internal/ir.Type*/ -}}
+{{- /*gotype: github.com/ogen-go/ogen/gen/ir.Type*/ -}}
 {{- define "json/encoders_sum" }}{{ $d := $.JSON.Sum -}}
 // Encode encodes {{ $.Name }} as json.
 func (s {{ $.Name }}) Encode(e *jx.Encoder) {
@@ -32,7 +32,11 @@ func (s *{{ $.Name }}) Decode(d *jx.Decoder) error {
 	{{- if or ($d.Primitive) ($d.TypeDiscriminator) }}
 	switch t := d.Next(); t {
 	{{- range $s := $.SumOf }}
-	case jx.{{ $s.JSON.Type }}:
+	{{- with $typ := $s.JSON.Type }}
+	case jx.{{ $typ }}:
+	{{- else }}
+	case {{ $s.JSON.SumTypes }}:
+	{{- end }}
 		{{- template "json/dec" elem $s (printf "s.%s" $s.Name) }}
 		s.Type = {{ $s.Name }}{{ $.Name }}
 	{{- end }}

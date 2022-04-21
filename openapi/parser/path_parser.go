@@ -2,27 +2,26 @@ package parser
 
 import (
 	"github.com/go-faster/errors"
-
-	"github.com/ogen-go/ogen/internal/oas"
+	"github.com/ogen-go/ogen/openapi"
 )
 
 type pathParser struct {
-	path   string           // immutable
-	params []*oas.Parameter // immutable
+	path   string               // immutable
+	params []*openapi.Parameter // immutable
 
-	parts []oas.PathPart // parsed parts
-	part  []rune         // current part
-	param bool           // current part is param name?
+	parts []openapi.PathPart // parsed parts
+	part  []rune             // current part
+	param bool               // current part is param name?
 }
 
-func parsePath(path string, params []*oas.Parameter) ([]oas.PathPart, error) {
+func parsePath(path string, params []*openapi.Parameter) ([]openapi.PathPart, error) {
 	return (&pathParser{
 		path:   path,
 		params: params,
 	}).Parse()
 }
 
-func (p *pathParser) Parse() ([]oas.PathPart, error) {
+func (p *pathParser) Parse() ([]openapi.PathPart, error) {
 	err := p.parse()
 	return p.parts, err
 }
@@ -73,7 +72,7 @@ func (p *pathParser) push() error {
 	defer func() { p.part = nil }()
 
 	if !p.param {
-		p.parts = append(p.parts, oas.PathPart{Raw: string(p.part)})
+		p.parts = append(p.parts, openapi.PathPart{Raw: string(p.part)})
 		return nil
 	}
 
@@ -82,13 +81,13 @@ func (p *pathParser) push() error {
 		return errors.Errorf("path parameter not specified: %q", string(p.part))
 	}
 
-	p.parts = append(p.parts, oas.PathPart{Param: param})
+	p.parts = append(p.parts, openapi.PathPart{Param: param})
 	return nil
 }
 
-func (p *pathParser) lookupParam(name string) (*oas.Parameter, bool) {
+func (p *pathParser) lookupParam(name string) (*openapi.Parameter, bool) {
 	for _, p := range p.params {
-		if p.Name == name && p.In == oas.LocationPath {
+		if p.Name == name && p.In == openapi.LocationPath {
 			return p, true
 		}
 	}

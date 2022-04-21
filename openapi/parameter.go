@@ -1,4 +1,4 @@
-package oas
+package openapi
 
 import "github.com/ogen-go/ogen/jsonschema"
 

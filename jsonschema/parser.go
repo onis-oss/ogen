@@ -5,6 +5,7 @@ import (
 	"regexp"
 
 	"github.com/go-faster/errors"
+	"github.com/go-faster/jx"
 )
 
 // ReferenceResolver resolves JSON schema references.
@@ -30,6 +31,10 @@ func NewParser(s Settings) *Parser {
 
 func (p *Parser) Parse(schema *RawSchema) (*Schema, error) {
 	return p.parse(schema, resolveCtx{})
+}
+
+func (p *Parser) Resolve(ref string) (*Schema, error) {
+	return p.resolve(ref, resolveCtx{})
 }
 
 func (p *Parser) parse(schema *RawSchema, ctx resolveCtx) (*Schema, error) {
@@ -64,6 +69,13 @@ func (p *Parser) parse1(schema *RawSchema, ctx resolveCtx, hook func(*Schema) *S
 			s.Default = v
 			s.DefaultSet = true
 		}
+		if a, ok := schema.XAnnotations["x-ogen-name"]; ok {
+			name, err := jx.DecodeBytes(a).Str()
+			if err != nil {
+				return nil, errors.Wrapf(err, "decode %q", a)
+			}
+			s.XOgenName = name
+		}
 	}
 
 	return s, nil
@@ -92,15 +104,16 @@ func (p *Parser) parseSchema(schema *RawSchema, ctx resolveCtx, hook func(*Schem
 
 	switch {
 	case len(schema.Enum) > 0:
-		if p.inferTypes && schema.Type == "" {
-			typ, err := inferJSONType(schema.Enum[0])
+		typ := schema.Type
+		if p.inferTypes && typ == "" {
+			inferred, err := inferJSONType(schema.Enum[0])
 			if err != nil {
 				return nil, errors.Wrap(err, "infer enum type")
 			}
-			schema.Type = typ
+			typ = inferred
 		}
 
-		t, err := parseType(schema.Type)
+		t, err := parseType(typ)
 		if err != nil {
 			return nil, errors.Wrap(err, "type")
 		}
@@ -110,20 +123,17 @@ func (p *Parser) parseSchema(schema *RawSchema, ctx resolveCtx, hook func(*Schem
 			Format: schema.Format,
 		}), nil
 	case len(schema.OneOf) > 0:
+		s := hook(&Schema{})
+
 		schemas, err := p.parseMany(schema.OneOf, ctx)
 		if err != nil {
 			return nil, errors.Wrapf(err, "oneOf")
 		}
+		s.OneOf = schemas
 
-		return hook(&Schema{OneOf: schemas}), nil
+		return s, nil
 	case len(schema.AnyOf) > 0:
-		schemas, err := p.parseMany(schema.AnyOf, ctx)
-		if err != nil {
-			return nil, errors.Wrapf(err, "anyOf")
-		}
-
-		return hook(&Schema{
-			AnyOf: schemas,
+		s := hook(&Schema{
 			// Object validators
 			MaxProperties: schema.MaxProperties,
 			MinProperties: schema.MinProperties,
@@ -141,47 +151,59 @@ func (p *Parser) parseSchema(schema *RawSchema, ctx resolveCtx, hook func(*Schem
 			MaxLength: schema.MaxLength,
 			MinLength: schema.MinLength,
 			Pattern:   schema.Pattern,
-		}), nil
+		})
+
+		schemas, err := p.parseMany(schema.AnyOf, ctx)
+		if err != nil {
+			return nil, errors.Wrapf(err, "anyOf")
+		}
+		s.AnyOf = schemas
+
+		return s, nil
 	case len(schema.AllOf) > 0:
+		s := hook(&Schema{})
+
 		schemas, err := p.parseMany(schema.AllOf, ctx)
 		if err != nil {
 			return nil, errors.Wrap(err, "allOf")
 		}
+		s.AllOf = schemas
 
-		return hook(&Schema{AllOf: schemas}), nil
+		return s, nil
 	}
 
+	typ := schema.Type
 	// Try to infer schema type from properties.
-	if p.inferTypes && schema.Type == "" {
+	if p.inferTypes && typ == "" {
 		switch {
 		case len(schema.Properties) > 0 ||
 			schema.AdditionalProperties != nil ||
 			schema.PatternProperties != nil ||
 			schema.MaxProperties != nil ||
 			schema.MinProperties != nil:
-			schema.Type = "object"
+			typ = "object"
 
 		case schema.Items != nil ||
 			schema.UniqueItems ||
 			schema.MaxItems != nil ||
 			schema.MinItems != nil:
-			schema.Type = "array"
+			typ = "array"
 
 		case schema.Maximum != nil ||
 			schema.Minimum != nil ||
 			schema.ExclusiveMinimum ||
 			schema.ExclusiveMaximum || // FIXME(tdakkota): check for existence instead of true?
 			schema.MultipleOf != nil:
-			schema.Type = "number"
+			typ = "number"
 
 		case schema.MaxLength != nil ||
 			schema.MinLength != nil ||
 			schema.Pattern != "":
-			schema.Type = "string"
+			typ = "string"
 		}
 	}
 
-	switch schema.Type {
+	switch typ {
 	case "object":
 		if schema.Items != nil {
 			return nil, errors.New("object cannot contain 'items' field")
@@ -309,6 +331,12 @@ func (p *Parser) parseSchema(schema *RawSchema, ctx resolveCtx, hook func(*Schem
 			Pattern:   schema.Pattern,
 		}), nil
 
+	case "null":
+		return hook(&Schema{
+			Type:     Null,
+			Nullable: true,
+		}), nil
+
 	case "":
 		return hook(&Schema{}), nil
 
@@ -342,6 +370,10 @@ func (p *Parser) resolve(ref string, ctx resolveCtx) (*Schema, error) {
 		return nil, errors.New("infinite recursion")
 	}
 	ctx[ref] = struct{}{}
+	defer func() {
+		// Drop the resolved ref to prevent false-positive infinite recursion detection.
+		delete(ctx, ref)
+	}()
 
 	raw, err := p.resolver.ResolveReference(ref)
 	if err != nil {

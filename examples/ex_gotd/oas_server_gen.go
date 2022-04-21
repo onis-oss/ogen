@@ -3,80 +3,11 @@
 package api
 
 import (
-	"bytes"
 	"context"
-	"fmt"
-	"io"
-	"math"
-	"math/big"
-	"math/bits"
-	"net"
-	"net/http"
-	"net/netip"
-	"net/url"
-	"regexp"
-	"sort"
-	"strconv"
-	"strings"
-	"sync"
-	"time"
 
-	"github.com/go-faster/errors"
-	"github.com/go-faster/jx"
-	"github.com/google/uuid"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/codes"
-	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/metric/instrument/syncint64"
-	"go.opentelemetry.io/otel/metric/nonrecording"
-	"go.opentelemetry.io/otel/trace"
 
-	"github.com/ogen-go/ogen/conv"
-	ht "github.com/ogen-go/ogen/http"
-	"github.com/ogen-go/ogen/json"
 	"github.com/ogen-go/ogen/otelogen"
-	"github.com/ogen-go/ogen/uri"
-	"github.com/ogen-go/ogen/validate"
-)
-
-// No-op definition for keeping imports.
-var (
-	_ = bytes.NewReader
-	_ = context.Background()
-	_ = fmt.Stringer(nil)
-	_ = io.Copy
-	_ = math.Mod
-	_ = big.Rat{}
-	_ = bits.LeadingZeros64
-	_ = net.IP{}
-	_ = http.MethodGet
-	_ = netip.Addr{}
-	_ = url.URL{}
-	_ = regexp.MustCompile
-	_ = sort.Ints
-	_ = strconv.ParseInt
-	_ = strings.Builder{}
-	_ = sync.Pool{}
-	_ = time.Time{}
-
-	_ = errors.Is
-	_ = jx.Null
-	_ = uuid.UUID{}
-	_ = otel.GetTracerProvider
-	_ = attribute.KeyValue{}
-	_ = codes.Unset
-	_ = metric.MeterConfig{}
-	_ = syncint64.Counter(nil)
-	_ = nonrecording.NewNoopMeterProvider
-	_ = trace.TraceIDFromHex
-
-	_ = conv.ToInt32
-	_ = ht.NewRequest
-	_ = json.Marshal
-	_ = otelogen.Version
-	_ = uri.PathEncoder{}
-	_ = validate.Int{}
 )
 
 // Handler handles operations described by OpenAPI v3 specification.
@@ -101,6 +32,10 @@ type Handler interface {
 	//
 	// POST /answerShippingQuery
 	AnswerShippingQuery(ctx context.Context, req AnswerShippingQuery) (Result, error)
+	// AnswerWebAppQuery implements answerWebAppQuery operation.
+	//
+	// POST /answerWebAppQuery
+	AnswerWebAppQuery(ctx context.Context, req AnswerWebAppQuery) (Result, error)
 	// ApproveChatJoinRequest implements approveChatJoinRequest operation.
 	//
 	// POST /approveChatJoinRequest
@@ -205,6 +140,10 @@ type Handler interface {
 	//
 	// POST /getChatMemberCount
 	GetChatMemberCount(ctx context.Context, req GetChatMemberCount) (ResultInt, error)
+	// GetChatMenuButton implements getChatMenuButton operation.
+	//
+	// POST /getChatMenuButton
+	GetChatMenuButton(ctx context.Context, req OptGetChatMenuButton) (Result, error)
 	// GetFile implements getFile operation.
 	//
 	// POST /getFile
@@ -221,6 +160,10 @@ type Handler interface {
 	//
 	// POST /getMyCommands
 	GetMyCommands(ctx context.Context, req OptGetMyCommands) (ResultArrayOfBotCommand, error)
+	// GetMyDefaultAdministratorRights implements getMyDefaultAdministratorRights operation.
+	//
+	// POST /getMyDefaultAdministratorRights
+	GetMyDefaultAdministratorRights(ctx context.Context, req OptGetMyDefaultAdministratorRights) (Result, error)
 	// GetStickerSet implements getStickerSet operation.
 	//
 	// POST /getStickerSet
@@ -341,6 +284,10 @@ type Handler interface {
 	//
 	// POST /setChatDescription
 	SetChatDescription(ctx context.Context, req SetChatDescription) (Result, error)
+	// SetChatMenuButton implements setChatMenuButton operation.
+	//
+	// POST /setChatMenuButton
+	SetChatMenuButton(ctx context.Context, req OptSetChatMenuButton) (Result, error)
 	// SetChatPermissions implements setChatPermissions operation.
 	//
 	// POST /setChatPermissions
@@ -365,6 +312,10 @@ type Handler interface {
 	//
 	// POST /setMyCommands
 	SetMyCommands(ctx context.Context, req SetMyCommands) (Result, error)
+	// SetMyDefaultAdministratorRights implements setMyDefaultAdministratorRights operation.
+	//
+	// POST /setMyDefaultAdministratorRights
+	SetMyDefaultAdministratorRights(ctx context.Context, req OptSetMyDefaultAdministratorRights) (Result, error)
 	// SetPassportDataErrors implements setPassportDataErrors operation.
 	//
 	// POST /setPassportDataErrors
