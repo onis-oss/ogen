@@ -23,7 +23,7 @@ func (s *Server) handle{{ $op.Name }}Request(args [{{ $op.PathParamsCount }}]str
 	defer span.End()
 	p := s.h.PolicyForRequest(ctx, r) //check policy
 	if !p.IsAllowed(PrivId{{ $op.Name }}) {
-		s.badRequest(ctx, w, span, otelAttrs, errors.New("ogen: {{ $op.Name }} is not allowed"))
+		s.badRequest(ctx, w, r, span, otelAttrs, errors.New("ogen: {{ $op.Name }} is not allowed"))
 		return
 	}
 	ctx = NewPolicyContext(ctx, p)
@@ -67,7 +67,7 @@ func (s *Server) handle{{ $op.Name }}Request(args [{{ $op.PathParamsCount }}]str
 	// Operation has data driven policy
 	p = s.h.PolicyFor{{$op.Name}}Req(ctx{{ if $op.Request }}, request{{ end }}{{if $op.Params}}, params {{ end }}, p)
 	if !p.IsAllowed(PrivId{{ $op.Name }}) {
-		s.badRequest(ctx, w, span, otelAttrs, errors.New("ogen: {{ $op.Name }} is not allowed"))
+		s.badRequest(ctx, w, r, span, otelAttrs, errors.New("ogen: {{ $op.Name }} is not allowed"))
 		return
 	}
 	response, err := s.h.{{$op.Name}}(ctx{{ if $op.Request }}, request{{ end }}{{if $op.Params}}, params {{ end }})
@@ -95,7 +95,7 @@ func (s *Server) handle{{ $op.Name }}Request(args [{{ $op.PathParamsCount }}]str
 	// Operation has data driven policy
 	p = s.h.PolicyFor{{$op.Name}}Res(ctx, p{{ if $op.Request }}, request{{ end }}{{if $op.Params}}, params {{ end }}, response)
 	if !p.IsAllowed(PrivId{{ $op.Name }}) {
-		s.badRequest(ctx, w, span, otelAttrs, errors.New("ogen: Response {{ $op.Name }} is not allowed"))
+		s.badRequest(ctx, w, r, span, otelAttrs, errors.New("ogen: Response {{ $op.Name }} is not allowed"))
 		return
 	}
 	if err := encode{{ $op.Name }}Response(response, w, span); err != nil {
